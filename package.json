@@ -1,17 +1,16 @@
 {
-  "name": "szkajpur_bot",
-  "version": "0.0.1",
+  "name": "KonfidentBot",
+  "version": "0.0.2",
   "description": "Open source Twitch chat bot.",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
   "author": "szkajpur",
   "license": "MIT",
   "dependencies": {
+    "chalk": "^4.1.2",
     "dank-twitch-irc": "^4.3.0",
-    "got": "^11.8.3",
-    "moment": "^2.29.1"
+    "got": "^11.8.3"
   }
 }
