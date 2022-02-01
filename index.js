@@ -120,19 +120,21 @@ client.on("PRIVMSG", async (msg) => {
             };
             break;
         case 'spam':
-            if (parseInt(args[0]) == null){
-                client.say(msg.channelName, `@${msg.senderUsername}, ${config.prefix}spam [ilość] [wiadomość] NaM`);
-                return;
-            }
-            let spamTimes = parseInt(args[0]);
-            let spamText = String(args.slice(1).join(' '));
-            if (!spamText.length){
-                client.say(msg.channelName, `@${msg.senderUsername}, ${config.prefix}spam [ilość] [wiadomość] NaM`);
-                return;
-            };
-            while (spamTimes > 0){
-                client.say(msg.channelName, spamText);
-                spamTimes = spamTimes - 1;
+            if (msg.senderUserID === config.ownerID){
+                if (parseInt(args[0]) == null){
+                    client.say(msg.channelName, `@${msg.senderUsername}, ${config.prefix}spam [ilość] [wiadomość] NaM`);
+                    return;
+                }
+                let spamTimes = parseInt(args[0]);
+                let spamText = String(args.slice(1).join(' '));
+                if (!spamText.length){
+                    client.say(msg.channelName, `@${msg.senderUsername}, ${config.prefix}spam [ilość] [wiadomość] NaM`);
+                    return;
+                };
+                while (spamTimes > 0){
+                    client.say(msg.channelName, spamText);
+                    spamTimes = spamTimes - 1;
+                };
             };
             break;
         case 'czyjpies':
