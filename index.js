@@ -91,11 +91,9 @@ client.on("PRIVMSG", async (msg) => {
         return;
     };
     if ((cooldown == true) && !(msg.senderUserID === config.ownerID)){
-        console.log(`User Cooldown`); 
         return;
     }
     if (talkedRecently.has(msg.senderUserID) && !(msg.senderUserID === config.ownerID)){
-        console.log(`Global Cooldown`);
         return;
     };
     let args = msg.messageText.slice(config.prefix.length).trim().split(/\s+/); // object 
@@ -200,7 +198,7 @@ client.on("PRIVMSG", async (msg) => {
                     lastseen = lastseen.split('T');
                     let lastseenDate = String(lastseen[0]);
                     let lastseenTime = new Date(lastseen).toLocaleTimeString('pl-PL');
-                    client.say(msg.channelName, `@${msg.senderUsername}, użytkownik ${target3} był ostatnio widzany na kanale: ${streamer} (${lastseenTime} ${lastseenDate})`);
+                    client.say(msg.channelName, `@${msg.senderUsername}, użytkownik ${target3} był ostatnio widziany na kanale: ${streamer} (${lastseenTime} ${lastseenDate})`);
                 } catch (error) {
                     console.error(error.response);
                     return;
