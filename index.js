@@ -35,31 +35,30 @@ function cytat(channel, username){
     (async () => {
         try {
             do {
-                var response = await got(`https://harambelogs.pl/channel/demonzz1/user/${username}/random`);
+                var response = await got(`https://harambelogs.pl/channel/demonzz1/userid/${username}/random`);
             } while (!response.body.includes('#demonzz1'));
-            if (username == 'pierdzibak_kwiatka' || username == 'pierdzibak_laskawy') {
+            if (username == '139448263') {
                 var emote = "Pierdzibak";
+                var nick = "pierdzibak1";
             } else
-            if (username == 'ltk__') {
+            if (username == '37280771') {
                 var emote = "Madge";
+                var nick = "ltk__";
             } else
-            if (username == 'julkalols') {
+            if (username == '127732599') {
                 var emote = "mitoman";
+                var nick = "januszlols";
             }
-            if (username == 'gawcio69') {
+            if (username == '703242397') {
                 var emote = "peepoFoil";
+                var nick = "gawcio69";
             }
             let bodyCytat = response.body;
-            if (bodyCytat.includes(username)){
-                let quote = bodyCytat.split(`#demonzz1 ${username}:`);
+            if (bodyCytat.includes(nick)){
+                let quote = bodyCytat.split(`#demonzz1 ${nick}:`);
                 let quoteMsg = quote[1].trim();
                 client.say(channel, `${emote} Thinking ${quoteMsg} Thinking2 ${quote[0]}`);
                 return;
-            } else if (bodyCytat.includes('pierdzibak_laskawy')) {
-                let quote = bodyCytat.split(`#demonzz1 pierdzibak_laskawy:`);
-                let quoteMsg = quote[1].trim();
-                client.say(channel, `${emote} Thinking ${quoteMsg} Thinking2 ${quote[0]}`);
-                return;    
             } else {
                 client.say(channel, `Nie udało się pobrać cytatu PoroSad`);
                 return;
@@ -101,10 +100,18 @@ client.on("PRIVMSG", async (msg) => {
     const stripPrefix = String(msg.messageText).substring(config.prefix.length); // the same as "args" but this is STRING
     switch(command){
         case 'ping':
-            client.say(msg.channelName, `PONG FeelsDankMan`);
+            let t0 = performance.now();
+            await client.ping();
+            let t1 = performance.now();
+            let latency = (t1 - t0).toFixed();
+            client.say(msg.channelName, `FeelsDankMan PONG! Latency: ${latency}ms Channels: ${config.connectChannels.length}`);
             break;
         case 'help':
-            client.say(msg.channelName, `@${msg.senderUsername}, dostępne komendy: ${config.prefix}ping, ${config.prefix}help, ${config.prefix}czyjpies [nick], ${config.prefix}top5 [nick], ${config.prefix}lastseen [nick], ${config.prefix}cytat_pierdzibaka, ${config.prefix}cytat_janusza, ${config.prefix}cytat_ltk, ${config.prefix}cytat_gawcia FeelsDankMan`);
+            if (msg.channelID == `106318725`){
+                client.say(msg.channelName, `@${msg.senderUsername}, dostępne komendy: ${config.prefix}ping, ${config.prefix}help, ${config.prefix}czyjpies [nick], ${config.prefix}top5 [nick], ${config.prefix}lastseen [nick], ${config.prefix}tuck, ${config.prefix}kotek, ${config.prefix}piesek, ${config.prefix}cytat_pierdzibaka, ${config.prefix}cytat_janusza, ${config.prefix}cytat_ltk, ${config.prefix}cytat_gawcia FeelsDankMan`);
+            } else {
+                client.say(msg.channelName, `@${msg.senderUsername}, dostępne komendy: ${config.prefix}ping, ${config.prefix}help, ${config.prefix}czyjpies [nick], ${config.prefix}top5 [nick], ${config.prefix}lastseen [nick], ${config.prefix}tuck, ${config.prefix}kotek, ${config.prefix}piesek FeelsDankMan`); 
+            };
             break;
         case 'echo':
             if (msg.senderUserID === config.ownerID){
@@ -134,6 +141,18 @@ client.on("PRIVMSG", async (msg) => {
                     spamTimes = spamTimes - 1;
                 };
             };
+            break;
+        case 'rp':
+            if (msg.senderUserID === config.ownerID){
+                (async () => {
+                    try {   
+                        const response = await got(`https://2g.be/twitch/randomviewer.php?channel=${msg.channelName}`);
+                        client.say(msg.channelName, `FeelsDankMan 🔔 @${response.body}`);
+                    } catch (error) {
+                        console.error(error.response);
+                    }
+                })();
+            }
             break;
         case 'czyjpies':
             let target = checkUsername(args);
@@ -205,17 +224,66 @@ client.on("PRIVMSG", async (msg) => {
                 }
             })();  
             break;
+        case 'tuck': 
+            let target4 = checkUsername(args);
+            if (target4 == null){
+                client.say(msg.channelName, `@${msg.senderUsername}, ${config.prefix}tuck [nick] ppL`);
+                return;
+            } else {
+                client.say(msg.channelName, `${msg.senderUsername} tucks ${target4} into bed FeelsDankMan 👉 🛏`);
+            }
+            break;
+        case 'kotek':
+            (async () => {
+                try {
+                    const response = await got(`https://meme-api.herokuapp.com/gimme/cat`);
+                    const responsejson = JSON.parse(response.body);
+                    client.say(msg.channelName, `@${msg.senderUsername}, CoolCat 👉 ${responsejson.url}`);
+                } catch (error) {
+                    console.error(error.response);
+                    return;
+                }
+            })();
+            break;
+        case 'piesek':
+            (async () => {
+                try {
+                    const response = await got(`https://meme-api.herokuapp.com/gimme/dog`);
+                    const responsejson = JSON.parse(response.body);
+                    client.say(msg.channelName, `@${msg.channelName}, CorgiDerp 👉 ${responsejson.url}`);
+                } catch (error) {
+                    console.error(error.response);
+                    return;
+                }
+            })();
+            break
         case 'cytat_pierdzibaka':
-            cytat(msg.channelName, 'pierdzibak_kwiatka');
+            if (msg.channelID == `106318725`){
+                cytat(msg.channelName, '139448263');
+            } else {
+                return;
+            };
             break;
         case 'cytat_janusza':
-            cytat(msg.channelName, 'julkalols');
+            if (msg.channelID == `106318725`){
+                cytat(msg.channelName, '127732599');
+            } else {
+                return;
+            };
             break;
         case 'cytat_ltk':
-            cytat(msg.channelName, 'ltk__');
+            if (msg.channelID == `106318725`){
+                cytat(msg.channelName, '37280771');
+            } else {
+                return;
+            };
             break;
         case 'cytat_gawcia':
-            cytat(msg.channelName, 'gawcio69');
+            if (msg.channelID == `106318725`){
+                cytat(msg.channelName, '703242397');
+            } else {
+                return;
+            };
             break;
     }
     talkedRecently.add(msg.senderUserID);
