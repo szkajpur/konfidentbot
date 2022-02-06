@@ -250,7 +250,7 @@ client.on("PRIVMSG", async (msg) => {
                 try {
                     const response = await got(`https://meme-api.herokuapp.com/gimme/dog`);
                     const responsejson = JSON.parse(response.body);
-                    client.say(msg.channelName, `@${msg.channelName}, CorgiDerp 👉 ${responsejson.url}`);
+                    client.say(msg.channelName, `@${msg.senderUsername}, CorgiDerp 👉 ${responsejson.url}`);
                 } catch (error) {
                     console.error(error.response);
                     return;
