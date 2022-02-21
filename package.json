@@ -1,6 +1,6 @@
 {
-  "name": "KonfidentBot",
-  "version": "0.0.2",
+  "name": "konfidentbot",
+  "version": "0.0.3",
   "description": "Open source Twitch chat bot.",
   "main": "index.js",
   "scripts": {
@@ -9,8 +9,7 @@
   "author": "szkajpur",
   "license": "MIT",
   "dependencies": {
-    "chalk": "^4.1.2",
-    "dank-twitch-irc": "^4.3.0",
+    "@aidenhadisi/amazeful-twitch-irc": "^4.5.1",
     "got": "^11.8.3"
   }
 }
