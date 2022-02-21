@@ -1,14 +1,15 @@
-const { ChatClient, AlternateMessageModifier, SlowModeRateLimiter } = require('dank-twitch-irc');
-const chalk = require('chalk');
+const { ChatClient, AlternateMessageModifier, SlowModeRateLimiter, replyToServerPing } = require('@aidenhadisi/amazeful-twitch-irc');
 const got = require('got');
 const config = require('./config');
+const fs = require("fs");
 
 const usernameRegex = new RegExp(/^@?([\w]{1,25}),?$/);
 
-const talkedRecently = new Set();
-let userCD = parseInt(config.userCooldown);
-let globalCD = parseInt(config.globalCooldown);
-var cooldown = false;
+var talkedRecently = new Set();
+var cooldownChannel = new Set();
+var userCD = parseInt(config.userCooldown);
+var globalCD = parseInt(config.globalCooldown);
+var date = new Date().toLocaleString().replace(',','').split(' ');
 
 // declare client
 let client = new ChatClient({
@@ -21,8 +22,10 @@ let client = new ChatClient({
 // events on client
 client.use(new AlternateMessageModifier(client));
 client.use(new SlowModeRateLimiter(client, 10));
+
 client.on("ready", async () => {
 	console.log(`Successfully connected to chat`);
+    client.say(config.connectChannels[0], `Pomyślnie połączono z czatem! Stare`);
 });
 client.on("close", async (error) => {
     if (error !== null){
@@ -30,57 +33,56 @@ client.on("close", async (error) => {
     }
 });
 
-// Cytat command function
-function cytat(channel, username){
+// cytat command function
+function cytat(channel, usernameID, sendernick){
+    if (channel != 'demonzz1'){
+        client.say(channel, ` @${sendernick}, Ta komenda jest dostępna tylko na czacie kanału demonzz1 👍`);
+        return;
+    };
     (async () => {
         try {
             do {
-                var response = await got(`https://harambelogs.pl/channel/demonzz1/userid/${username}/random`);
-            } while (!response.body.includes('#demonzz1'));
-            if (username == '139448263') {
+                var response = await got(`https://harambelogs.pl/channel/demonzz1/userid/${usernameID}/random`);
+            } while (!response.body.includes(`#demonzz1`));
+            if (usernameID == '139448263') {
                 var emote = "Pierdzibak";
                 var nick = "pierdzibak1";
-            } else
-            if (username == '37280771') {
-                var emote = "Madge";
-                var nick = "ltk__";
-            } else
-            if (username == '127732599') {
+            };
+            if (usernameID == '127732599') {
                 var emote = "mitoman";
                 var nick = "januszlols";
-            }
-            if (username == '703242397') {
+            };
+            if (usernameID == '703242397') {
                 var emote = "peepoFoil";
                 var nick = "gawcio69";
-            }
-            let bodyCytat = response.body;
-            if (bodyCytat.includes(nick)){
-                let quote = bodyCytat.split(`#demonzz1 ${nick}:`);
+            };
+            if (response.body.includes(nick)){
+                let quote = response.body.split(`#demonzz1 ${nick}:`);
                 let quoteMsg = quote[1].trim();
                 client.say(channel, `${emote} Thinking ${quoteMsg} Thinking2 ${quote[0]}`);
-                return;
             } else {
-                client.say(channel, `Nie udało się pobrać cytatu PoroSad`);
-                return;
+                client.say(channel, `@${sendernick}, Nie udało się pobrać cytatu PoroSad`);
             }
         } catch (error) {
-            console.error(error.response);
-            return;
+            client.say(channel, `@${sendernick}, Wystąpił błąd podczas pobierania cytatu PoroSad`);
         }
     })();
 };
 
+// check & convert target username function
 function checkUsername(toCheck){
-    if (toCheck.length < 1){
+    if (toCheck == null){
         return null;
     }
-    let match = usernameRegex.exec(toCheck[0].toLowerCase());
+    toCheck = String(toCheck)
+    let match = usernameRegex.exec(toCheck.toLowerCase());
     if (match === null){
         return null;
     }
-    let target = match[1];
+    let target = String(match[1]);
     return target;
 }
+
 
 client.on("PRIVMSG", async (msg) => {
     if (msg.senderUserID === config.botID){
@@ -89,9 +91,9 @@ client.on("PRIVMSG", async (msg) => {
     if (!msg.messageText.startsWith(config.prefix)){
         return;
     };
-    if ((cooldown == true) && !(msg.senderUserID === config.ownerID)){
+    if (cooldownChannel.has(msg.channelID) && !(msg.senderUserID === config.ownerID)){
         return;
-    }
+    };
     if (talkedRecently.has(msg.senderUserID) && !(msg.senderUserID === config.ownerID)){
         return;
     };
@@ -107,14 +109,10 @@ client.on("PRIVMSG", async (msg) => {
             client.say(msg.channelName, `FeelsDankMan PONG! Latency: ${latency}ms Channels: ${config.connectChannels.length}`);
             break;
         case 'help':
-            if (msg.channelID == `106318725`){
-                client.say(msg.channelName, `@${msg.senderUsername}, dostępne komendy: ${config.prefix}ping, ${config.prefix}help, ${config.prefix}czyjpies [nick], ${config.prefix}top5 [nick], ${config.prefix}lastseen [nick], ${config.prefix}tuck, ${config.prefix}kotek, ${config.prefix}piesek, ${config.prefix}cytat_pierdzibaka, ${config.prefix}cytat_janusza, ${config.prefix}cytat_ltk, ${config.prefix}cytat_gawcia FeelsDankMan`);
-            } else {
-                client.say(msg.channelName, `@${msg.senderUsername}, dostępne komendy: ${config.prefix}ping, ${config.prefix}help, ${config.prefix}czyjpies [nick], ${config.prefix}top5 [nick], ${config.prefix}lastseen [nick], ${config.prefix}tuck, ${config.prefix}kotek, ${config.prefix}piesek FeelsDankMan`); 
-            };
+            client.say(msg.channelName, `@${msg.senderUsername}, https://bot.szkajpur.pl/ FeelsDankMan`);
             break;
         case 'echo':
-            if (msg.senderUserID === config.ownerID){
+            if (msg.senderUserID === config.ownerID || msg.isMod){
                 let echoMsg = stripPrefix.replace(/^echo/gi,``);
                 if (!echoMsg.length){
                     client.say(msg.channelName, `@${msg.senderUsername}, podaj wiadomość do pokazania! FeelsDankMan`);
@@ -124,8 +122,39 @@ client.on("PRIVMSG", async (msg) => {
                 };
             };
             break;
+        case 'reddit':
+            if (args[0] == null){
+                client.say(msg.channelName, `@${msg.senderUsername}, ${config.prefix}reddit [subreddit name] ppL`);
+                return;
+            };
+            let bany = require(config.bannedRedditsPath);
+            let reddit = args[0].toLocaleLowerCase();
+            if (bany.includes(reddit)){
+                client.say(msg.channelName, `@${msg.senderUsername}, podany subreddit jest zbanowany na bocie!`);
+                return;
+            }
+            (async () => {
+                try {
+                    const response = await got(`https://meme-api.herokuapp.com/gimme/${reddit}`, {
+                        responseType: 'json'
+                    });
+                    let notsafe = String(response.body.nsfw);
+                    if ((notsafe == "true") && !(msg.senderUserID === config.ownerID)){
+                        client.say(msg.channelName, `@${msg.senderUsername}, Znaleziony obrazek jest nsfw monkaS`);
+                        return;
+                    }
+					if (notsafe == "true") {
+						client.say(msg.channelName, `@${msg.senderUsername}, knaDyppaHopeep "${response.body.subreddit}" 👉 ${response.body.url} ⚠ NSFW ⚠`);
+					} else {
+                    client.say(msg.channelName, `@${msg.senderUsername}, knaDyppaHopeep "${response.body.subreddit}" 👉 ${response.body.url}`);
+					};
+                } catch (error) {
+                    client.say(msg.channelName, `@${msg.senderUsername}, Nie znaleziono podanego subreddita lub nie ma on zdjęć!`);
+                }
+            })();
+            break;
         case 'spam':
-            if (msg.senderUserID === config.ownerID){
+            if (msg.senderUserID === config.ownerID || msg.isMod){
                 if (parseInt(args[0]) == null){
                     client.say(msg.channelName, `@${msg.senderUsername}, ${config.prefix}spam [ilość] [wiadomość] NaM`);
                     return;
@@ -143,95 +172,99 @@ client.on("PRIVMSG", async (msg) => {
             };
             break;
         case 'rp':
-            if (msg.senderUserID === config.ownerID){
+            if (msg.senderUserID === config.ownerID || msg.isMod){
                 (async () => {
                     try {   
                         const response = await got(`https://2g.be/twitch/randomviewer.php?channel=${msg.channelName}`);
                         client.say(msg.channelName, `FeelsDankMan 🔔 @${response.body}`);
                     } catch (error) {
-                        console.error(error.response);
+                        return;
                     }
                 })();
             }
             break;
         case 'czyjpies':
-            let target = checkUsername(args);
+            let target = checkUsername(args[0]);
             if (target == null){
                 client.say(msg.channelName, `@${msg.senderUsername}, ${config.prefix}czyjpies [nick] ppL`);
                 return;
             };
             (async () => {
                 try {
-                    const response = await got(`https://xayo.pl/api/watchtime/${target}`);
-                    const list = JSON.parse(response.body);
-                    if (!list.length) {
+                    const response = await got(`https://xayo.pl/api/watchtime/${target}`, {
+                        responseType: 'json'
+                    });
+                    if (!response.body.length) {
                         client.say(msg.channelName, `@${msg.senderUsername}, nie ma podanego użytkownika w bazie danych. PoroSad`);
                         return;
                     }
-                    let message = `${list[0].streamer} (${list[0].count}min)`;
+                    let message = `${response.body[0].streamer} (${response.body[0].count}min)`;
                     client.say(msg.channelName, `@${msg.senderUsername}, ${target} jest psem: ${message} Wowee`);
                 } catch (error) {
-                    console.error(error.response);
-                    return;
+                    client.say(msg.channelName, `@${msg.senderUsername}, nie ma podanego użytkownika w bazie danych. PoroSad`);
                 }
             })();
             break;
         case 'top5':
-            let target2 = checkUsername(args);
+            let target2 = checkUsername(args[0]);
             if (target2 == null){
                 client.say(msg.channelName, `@${msg.senderUsername}, ${config.prefix}top5 [nick] ppL`);
                 return;
             };
             (async () => {
                 try {
-                    const response = await got(`https://xayo.pl/api/watchtime/${target2}`);
-                    const list = JSON.parse(response.body);
-                    if (!list.length) {
+                    const response = await got(`https://xayo.pl/api/watchtime/${target2}`, {
+                        responseType: 'json'
+                    });
+                    if (!response.body.length) {
                         client.say(msg.channelName, `@${msg.senderUsername}, nie ma podanego użytkownika w bazie danych. PoroSad`);
                         return;
                     }
-                    let message = `${list[0].streamer} ${list[0].count}min | ${list[1].streamer} ${list[1].count}min | ${list[2].streamer} ${list[2].count}min | ${list[3].streamer} ${list[3].count}min | ${list[4].streamer} ${list[4].count}min`;
+                    let message = `${response.body[0].streamer} ${response.body[0].count}min | ${response.body[1].streamer} ${response.body[1].count}min | ${response.body[2].streamer} ${response.body[2].count}min | ${response.body[3].streamer} ${response.body[3].count}min | ${response.body[4].streamer} ${response.body[4].count}min`;
                     client.say(msg.channelName, `@${msg.senderUsername}, TOP5 ${target2} -> ${message} PepoG`);
                 } catch (error) {
-                    console.error(error.response);
-                    return;
+                    client.say(msg.channelName, `@${msg.senderUsername}, nie ma podanego użytkownika w bazie danych. PoroSad`);
                 }
             })();
             break;
         case 'lastseen':
-            let target3 = checkUsername(args);
+            let target3 = checkUsername(args[0]);
             if (target3 == null){
                 client.say(msg.channelName, `@${msg.senderUsername}, ${config.prefix}lastseen [nick] ppL`);
                 return;
             };
             (async () => {
                 try {
-                    const response = await got(`https://vislaud.com/api/chatters?logins=${target3}`);
-                    const list = JSON.parse(response.body);
-                    if (list[0] == null) {
+                    const response = await got(`https://vislaud.com/api/chatters?logins=${target3}`, {
+                        responseType: 'json'
+                    });
+                    if (!response.body.length) {
                         client.say(msg.channelName, `@${msg.senderUsername}, nie ma podanego użytkownika w bazie danych. PoroSad`);
                         return;
                     }
-                    let streamer = list[0].lastseen.streamer.displayName;
-                    let lastseen = list[0].lastseen.timestamp;
+                    let streamer = response.body[0].lastseen.streamer.displayName;
+                    let lastseen = response.body[0].lastseen.timestamp;
                     lastseen = lastseen.split('T');
                     let lastseenDate = String(lastseen[0]);
                     let lastseenTime = new Date(lastseen).toLocaleTimeString('pl-PL');
                     client.say(msg.channelName, `@${msg.senderUsername}, użytkownik ${target3} był ostatnio widziany na kanale: ${streamer} (${lastseenTime} ${lastseenDate})`);
                 } catch (error) {
-                    console.error(error.response);
-                    return;
+                    client.say(msg.channelName, `@${msg.senderUsername}, nie ma podanego użytkownika w bazie danych. PoroSad`);
                 }
             })();  
             break;
         case 'tuck': 
-            let target4 = checkUsername(args);
+            let target4 = checkUsername(args[0]);
             if (target4 == null){
                 client.say(msg.channelName, `@${msg.senderUsername}, ${config.prefix}tuck [nick] ppL`);
                 return;
-            } else {
-                client.say(msg.channelName, `${msg.senderUsername} tucks ${target4} into bed FeelsDankMan 👉 🛏`);
             }
+            if (args[1] != undefined) {
+                let emote = args[1];
+                client.say(msg.channelName, `${msg.senderUsername} tucks ${target4} into bed ${emote} 👉 🛏`);
+            } else {
+            client.say(msg.channelName, `${msg.senderUsername} tucks ${target4} into bed FeelsDankMan 👉 🛏`);
+            };
             break;
         case 'kotek':
             (async () => {
@@ -240,8 +273,7 @@ client.on("PRIVMSG", async (msg) => {
                     const responsejson = JSON.parse(response.body);
                     client.say(msg.channelName, `@${msg.senderUsername}, CoolCat 👉 ${responsejson.url}`);
                 } catch (error) {
-                    console.error(error.response);
-                    return;
+                    client.say(msg.channelName, `@${msg.senderUsername}, nie znaleziono żadnego kotka. PoroSad`);
                 }
             })();
             break;
@@ -252,38 +284,87 @@ client.on("PRIVMSG", async (msg) => {
                     const responsejson = JSON.parse(response.body);
                     client.say(msg.channelName, `@${msg.senderUsername}, CorgiDerp 👉 ${responsejson.url}`);
                 } catch (error) {
-                    console.error(error.response);
+                    client.say(msg.channelName, `@${msg.senderUsername}, nie znaleziono żadnego pieska. PoroSad`);
+                }
+            })();
+            break;
+        case 'baninfo':
+            let target5 = checkUsername(args[0]);
+            if (target5 == null){
+                client.say(msg.channelName, `@${msg.senderUsername}, ${config.prefix}baninfo [nick] ppL`);
+                return;
+            }
+            (async () => {
+                try {
+                    const response = await got(`https://api.ivr.fi/v2/twitch/user/${target5}`, {
+                        responseType: 'json'
+                    });
+                    if (response.body.banned == false){
+                        client.say(msg.channelName, `@${msg.senderUsername}, podany użytkownik nie ma bana. EZ`);
+                    } else if (response.body.banned == true){
+                        client.say(msg.channelName, `@${msg.senderUsername}, ${response.body.displayName} -> Ban Reason: "${response.body.banReason}" | Id: ${response.body.id} | Affiliate: ${response.body.roles.isAffiliate} | Partner: ${response.body.roles.isPartner}`);
+                    } else {
+                        client.say(msg.channelName, `@${msg.senderUsername}, nie odnaleziono podanego użytkownika. PoroSad`);
+                        return;
+                    }
+                } catch (error) {
+                    client.say(msg.channelName, `@${msg.senderUsername}, nie odnaleziono podanego użytkownika. PoroSad`);
+                }
+            })();
+            break;
+        case 'subinfo':           
+            let usernameSub = checkUsername(args[0]);
+            if (usernameSub == null){
+                client.say(msg.channelName, `@${msg.senderUsername}, ${config.prefix}subinfo [nick] [channel] ppL`);
+                return;
+            };
+            let channelSub = checkUsername(args[1]);
+            if (channelSub == null){
+                client.say(msg.channelName, `@${msg.senderUsername}, ${config.prefix}subinfo [nick] [channel] ppL`);
+                return;                
+            };
+            (async () => {
+                try {
+                    const response = await got(`https://api.ivr.fi/twitch/subage/${usernameSub}/${channelSub}`,{
+                        responseType: 'json'
+                    });
+                    if (response.body.hidden == true){
+                        client.say(msg.channelName, `@${msg.senderUsername}, podany użytkownik ma ustawione subskrypcje na prywatne. BibleThump`);
+                    } else if (response.body.subscribed == false){
+                        if (response.body.cumulative.months > 0){
+                            let endsub = response.body.cumulative.end;
+                            endsub = endsub.split('T');
+                            let endsubDate = String(endsub[0]);
+                            let endsubTime = new Date(endsub).toLocaleTimeString('pl-PL');
+                            client.say(msg.channelName, `Użytkownik: ${response.body.username} | Kanał: ${response.body.channel} | Czy aktualnie subuje: NIE | Ostatni sub: ${response.body.cumulative.months} miesiąc (Skończył się ${endsubDate} ${endsubTime})`);
+                        } else {
+                            client.say(msg.channelName, `@${msg.senderUsername}, podany użytkownik nie miał suba na kanale ${response.body.channel} PoroSad`);
+                        }
+                    } else if (response.body.subscribed == true){
+                        let endsub = response.body.meta.endsAt;
+                        endsub = endsub.split('T');
+                        let endsubDate = String(endsub[0]);
+                        let endsubTime = new Date(endsub).toLocaleTimeString('pl-PL');
+                        if (response.body.meta.type == "gift"){
+                            client.say(msg.channelName, `Użytkownik: ${response.body.username} | Kanał: ${response.body.channel} | Czy aktualnie subuje: TAK | Typ suba: ${response.body.meta.type}, tier: ${response.body.meta.tier} | Kupiony przez: ${response.body.meta.gift.name} | ${response.body.cumulative.months} miesiąc, (Skończy się ${endsubDate} ${endsubTime})`);
+                        } else {
+                            client.say(msg.channelName, `Użytkownik: ${response.body.username} | Kanał: ${response.body.channel} | Czy aktualnie subuje: TAK | Typ suba: ${response.body.meta.type}, tier: ${response.body.meta.tier} | ${response.body.cumulative.months} miesiąc, (Skończy się ${endsubDate} ${endsubTime})`);
+                        };
+                    }
+                } catch (error) {
+                    client.say(msg.channelName, `@${msg.senderUsername}, nie odnaleziono podanego użytkownika lub kanału w bazie danych. PoroSad`);
                     return;
                 }
             })();
-            break
+            break;
         case 'cytat_pierdzibaka':
-            if (msg.channelID == `106318725`){
-                cytat(msg.channelName, '139448263');
-            } else {
-                return;
-            };
+            cytat(msg.channelName, '139448263', msg.senderUsername);
             break;
         case 'cytat_janusza':
-            if (msg.channelID == `106318725`){
-                cytat(msg.channelName, '127732599');
-            } else {
-                return;
-            };
-            break;
-        case 'cytat_ltk':
-            if (msg.channelID == `106318725`){
-                cytat(msg.channelName, '37280771');
-            } else {
-                return;
-            };
+            cytat(msg.channelName, '127732599', msg.senderUsername);
             break;
         case 'cytat_gawcia':
-            if (msg.channelID == `106318725`){
-                cytat(msg.channelName, '703242397');
-            } else {
-                return;
-            };
+            cytat(msg.channelName, '703242397', msg.senderUsername);
             break;
     }
     talkedRecently.add(msg.senderUserID);
@@ -291,9 +372,9 @@ client.on("PRIVMSG", async (msg) => {
         talkedRecently.delete(msg.senderUserID);       
     }, userCD);
 
-    cooldown = true;
+    cooldownChannel.add(msg.channelID);
     setTimeout(() => {
-        cooldown = false;
+        cooldownChannel.delete(msg.channelID);
     }, globalCD);
 });
 
