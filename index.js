@@ -2,6 +2,7 @@ const { ChatClient, AlternateMessageModifier, SlowModeRateLimiter, replyToServer
 const got = require('got');
 const config = require('./config');
 const fs = require("fs");
+const { time } = require('console');
 
 const usernameRegex = new RegExp(/^@?([\w]{1,25}),?$/);
 
@@ -69,6 +70,21 @@ function cytat(channel, usernameID, sendernick){
     })();
 };
 
+// function getViewers(channel){
+//     (async () => {
+//         try {
+//             const response = await got(`https://tmi.twitch.tv/group/user/${channel}/chatters`, {
+//                 responseType: 'json'
+//             });
+//             const listViewers =[...(response.body.chatters.viewers), ...(response.body.chatters.vips)];
+//             fs.writeFileSync(`listViewers_${channel}.txt`, JSON.stringify(listViewers, null, 4));
+//             console.log(`Pomyślnie pobrano listę ${response.body.chatter_count} czatowników kanału ${channel}`);
+//         } catch (error) {
+//             return;
+//         }
+//     })();
+// };
+
 // check & convert target username function
 function checkUsername(toCheck){
     if (toCheck == null){
@@ -110,6 +126,30 @@ client.on("PRIVMSG", async (msg) => {
             break;
         case 'help':
             client.say(msg.channelName, `@${msg.senderUsername}, https://bot.szkajpur.pl/ FeelsDankMan`);
+            break;
+        case 'channelstats':
+            let targetChannel = checkUsername(args[0]);
+            if (targetChannel == null){
+                client.say(msg.channelName, `@${msg.senderUsername}, ${config.prefix}channelstats [kanał] ppL`);
+                return;
+            };
+            (async () => {
+                try {
+                    const response = await got(`https://twitchtracker.com/api/channels/summary/${targetChannel}`, {
+                        responseType: 'json'
+                    });
+                    if (response.body.rank == undefined){
+                        client.say(msg.channelName, `@${msg.senderUsername}, nie znaleziono statystyk podanego kanału. PoroSad`);
+                        return;
+                    }
+                    let timeStreamed = response.body.minutes_streamed / 60;
+                    timeStreamed = Math.round(timeStreamed);
+                    client.say(msg.channelName, `@${msg.senderUsername}, Kanał: ${targetChannel} | Ranga: ${response.body.rank} | Czas przestrimowany: ${timeStreamed}h | Średnia widzów: ${response.body.avg_viewers} | Nowe followy: ${response.body.followers} [Dane z ostatnich 30 dni!]`);
+                } catch (error) {
+                    client.say(msg.channelName, `@${msg.senderUsername}, wystąpił błąd podczas pobierania statystyk. PoroSad`);
+                    return;
+                }
+            })();
             break;
         case 'echo':
             if (msg.senderUserID === config.ownerID || msg.isMod){
@@ -353,6 +393,28 @@ client.on("PRIVMSG", async (msg) => {
                     }
                 } catch (error) {
                     client.say(msg.channelName, `@${msg.senderUsername}, nie odnaleziono podanego użytkownika lub kanału w bazie danych. PoroSad`);
+                    return;
+                }
+            })();
+            break;
+        case 'emote':
+            let emotka = args[0];
+            if (emotka == null){
+                client.say(msg.channelName, `@${msg.senderUsername}, ${config.prefix}emotka [nazwa emotki] ppL`);
+                return;
+            };
+            (async () => {
+                try {
+                    const response = await got(`https://api.ivr.fi/twitch/emotes/${emotka}`, {
+                        responseType: 'json'
+                    });
+                        if (response.body.channelid == null){
+                            client.say(msg.channelName, `@${msg.senderUsername}, Emotka: ${response.body.emotecode} | ID: ${response.body.emoteid} | Link: ${response.body.emoteurl_3x} PepoG`);
+                        } else {
+                            client.say(msg.channelName, `@${msg.senderUsername}, Emotka: ${response.body.emotecode} | Kanał: ${response.body.channel} | Tier: ${response.body.tier} | ID: ${response.body.emoteid} | Link: ${response.body.emoteurl_3x} PepoG`);
+                        }
+                } catch (error) {
+                    client.say(msg.channelName, `@${msg.senderUsername}, nie znaleziono podanej emotki. PoroSad`);
                     return;
                 }
             })();
