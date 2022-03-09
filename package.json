@@ -1,6 +1,6 @@
 {
   "name": "konfidentbot",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Open source Twitch chat bot.",
   "main": "index.js",
   "scripts": {
