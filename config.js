@@ -1,14 +1,19 @@
 `use strict`;
 
-const botUsername = "";
+const botUsername = "KonfidentBot_";
 const botOauth = ""; // without "oauth:"
 const prefix = "$";
 const userCooldown = "12000"; // 12 seconds
 const globalCooldown = "4000" // 4 seconds
-const ownerID = ""; // owner id
-const botID = ""; // bot account id
+const ownerUsername = "szkajpur"; // owner nickname
 const bannedRedditsPath = "./bannedreddits.json";
+const anonymousChannels = [
+    'mamm0n'
+];
 const connectChannels = [
+    'pajlada'
+];
+const notifyChannels = [
     'pajlada'
 ];
 
@@ -18,8 +23,9 @@ module.exports = {
     prefix,
     userCooldown,
     globalCooldown,
-    ownerID,
-    botID,
+    ownerUsername,
+    bannedRedditsPath,
     connectChannels,
-    bannedRedditsPath
+    anonymousChannels,
+    notifyChannels
 };
